@@ -1,5 +1,13 @@
 # Shipping a Data Product: From Raw Telegram Data to an Analytical API
 
+## Project Status
+- **Task 0:** Project setup & environment management ✅
+- **Task 1:** Data scraping and collection ✅
+- **Task 2:** Data modeling and transformation ✅
+- **Task 3:** Data enrichment with YOLO ⏳
+- **Task 4:** Analytical API ⏳
+- **Task 5:** Pipeline orchestration ⏳
+
 ## Project Summary
 This project delivers an end-to-end data pipeline for extracting, transforming, enriching, and serving insights from Telegram data about Ethiopian medical businesses. It leverages dbt for transformation, Dagster for orchestration, YOLOv8 for image enrichment, and FastAPI for analytics. The pipeline is designed for reproducibility, scalability, and secure handling of secrets.
 
@@ -61,10 +69,49 @@ docker-compose up --build
 - Use the notebook at `notebooks/scraping.ipynb` (recommended: run on Google Colab).
 - Scraped data will be saved in `data/raw/telegram_messages/YYYY-MM-DD/channel_name/`.
 
-### Data Modeling & Transformation (Task 2)
-- Load raw JSON into PostgreSQL.
-- Use dbt to transform and model data (star schema: `dim_channels`, `dim_dates`, `fct_messages`).
-- Run dbt tests for data quality.
+## Task 2: Data Modeling and Transformation
+
+### Loading Raw Data
+- All JSON files from `data/raw/telegram_messages/YYYY-MM-DD/channel_name/` are loaded into a `raw_telegram_messages` table in PostgreSQL using a Python loader script (`src/load_raw_to_postgres.py`).
+- The script handles schema creation, upserts on message id/channel/date, and logs progress.
+
+#### Example Loader Script Snippet
+```python
+# src/load_raw_to_postgres.py
+# ...
+with open(file, 'r', encoding='utf-8') as f:
+    data = json.load(f)
+# ...
+cur.execute('''
+    CREATE TABLE IF NOT EXISTS raw_telegram_messages (...)
+''')
+# ...
+execute_values(cur, sql, values)
+```
+
+### dbt Project
+- dbt project initialized and connected to PostgreSQL.
+- **Staging Model:** `stg_telegram_messages.sql` cleans and restructures raw data.
+- **Data Mart Models:**
+  - `dim_channels`: Channel info
+  - `dim_dates`: Date dimension
+  - `fct_messages`: Fact table with foreign keys and metrics
+- **Testing:** dbt built-in and custom tests for data quality.
+- **Documentation:** dbt docs generated for all models.
+
+#### Example dbt Model Snippet
+```sql
+-- models/staging/stg_telegram_messages.sql
+select
+    id,
+    date::timestamp as message_date,
+    text,
+    has_media,
+    media_path,
+    channel_name,
+    scrape_date
+from {{ source('raw', 'raw_telegram_messages') }}
+```
 
 ### Data Enrichment (Task 3)
 - Use YOLOv8 to detect objects in images and link results to messages.

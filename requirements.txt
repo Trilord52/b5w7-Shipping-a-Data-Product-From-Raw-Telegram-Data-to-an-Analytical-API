@@ -3,10 +3,9 @@ telethon           # Telegram scraping
 sqlalchemy         # Database interaction
 python-dotenv      # Environment variable management
 pydantic           # Data validation (used by FastAPI)
+psycopg2           # PostgreSQL connectivity for loader script
 
 # Data Transformation
-# dbt-postgres is the recommended adapter for PostgreSQL
-# If using another warehouse, change accordingly
 dbt-postgres       # Data transformation and modeling
 
 # API
@@ -14,7 +13,6 @@ fastapi            # Analytical API
 uvicorn            # ASGI server for FastAPI
 
 # Orchestration
-# Dagster for pipeline orchestration and web UI
 dagster
 dagster-webserver
 
@@ -22,8 +20,7 @@ dagster-webserver
 ultralytics        # YOLOv8 for object detection
 
 # Utilities
-# tqdm for progress bars in scripts/notebooks
 tqdm
 
-# Testing (add more as needed)
+# Testing
 pytest 
