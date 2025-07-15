@@ -1,10 +1,29 @@
-telethon
-sqlalchemy
-dbt-postgres
-fastapi
-uvicorn
+# Core Data Pipeline Dependencies
+telethon           # Telegram scraping
+sqlalchemy         # Database interaction
+python-dotenv      # Environment variable management
+pydantic           # Data validation (used by FastAPI)
+
+# Data Transformation
+# dbt-postgres is the recommended adapter for PostgreSQL
+# If using another warehouse, change accordingly
+dbt-postgres       # Data transformation and modeling
+
+# API
+fastapi            # Analytical API
+uvicorn            # ASGI server for FastAPI
+
+# Orchestration
+# Dagster for pipeline orchestration and web UI
 dagster
 dagster-webserver
-ultralytics
-python-dotenv
-pydantic 
+
+# Data Enrichment
+ultralytics        # YOLOv8 for object detection
+
+# Utilities
+# tqdm for progress bars in scripts/notebooks
+tqdm
+
+# Testing (add more as needed)
+pytest 
