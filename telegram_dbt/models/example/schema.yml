@@ -8,6 +8,8 @@ sources:
     tables:
       - name: fct_image_detections
         description: "Fact table containing YOLOv8 object detection results loaded from enrichment."
+      - name: raw_telegram_messages
+        description: "Raw Telegram messages loaded from JSON files."
 
 
 models:
@@ -46,5 +48,32 @@ models:
           - not_null
       - name: confidence_score
         description: "Confidence score of the detection."
+        tests:
+          - not_null
+
+  - name: fct_messages
+    description: "Fact table containing one row per message, with foreign keys to dimension tables and key metrics."
+    columns:
+      - name: message_id
+        description: "Unique message identifier."
+        tests:
+          - unique
+          - not_null
+      - name: channel_name
+        description: "Name of the Telegram channel."
+        tests:
+          - not_null
+      - name: date
+        description: "Date and time of the message."
+        tests:
+          - not_null
+      - name: text
+        description: "Message text."
+      - name: has_media
+        description: "Whether the message contains media (image, etc.)."
+      - name: media_path
+        description: "Path to the media file, if any."
+      - name: scrape_date
+        description: "Date the message was scraped."
         tests:
           - not_null

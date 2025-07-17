@@ -7,7 +7,14 @@ venv/
 # Data and secrets
 data/
 .env
+.env.example
 
 # Project-specific
 instructions/
 logs/
+
+# dbt artifacts
+telegram_dbt/target/
+telegram_dbt/dbt_packages/
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
