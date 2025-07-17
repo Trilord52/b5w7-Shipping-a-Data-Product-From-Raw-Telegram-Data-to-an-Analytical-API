@@ -4,7 +4,7 @@
 - **Task 0:** Project setup & environment management ✅
 - **Task 1:** Data scraping and collection ✅
 - **Task 2:** Data modeling and transformation (dbt) ✅
-- **Task 3:** Data enrichment with YOLO ⏳
+- **Task 3:** Data enrichment with YOLO ✅
 - **Task 4:** Analytical API ⏳
 - **Task 5:** Pipeline orchestration ⏳
 
@@ -55,6 +55,40 @@ FCT_MESSAGES
   |-- channel_id --> DIM_CHANNELS
   |-- date_id    --> DIM_DATES
 ```
+
+## Data Enrichment with YOLO (Task 3)
+- All images scraped in Task 1 are processed using a YOLOv8 model (ultralytics) to detect objects of interest.
+- The enrichment script (`src/yolo_enrichment.py`) scans for new images and runs YOLOv8 inference, saving detection results to `data/yolo_detections.csv`.
+- The loader script (`src/load_yolo_detections_to_postgres.py`) imports these detections into the `fct_image_detections` table in PostgreSQL, linking each detection to its source message.
+- A dbt source and mart model (`fct_image_detections_mart`) are defined to expose these detections for analytics, with tests and documentation.
+- This enables analysis of visual content (e.g., most common detected objects, confidence scores, image-level trends) alongside text data in the warehouse.
+
+### How to Run YOLO Enrichment
+1. Ensure all images are present in the data directory (from Task 1 scraping).
+2. Run the enrichment script:
+   ```sh
+   python src/yolo_enrichment.py
+   ```
+3. Load the detection results into PostgreSQL:
+   ```sh
+   python src/load_yolo_detections_to_postgres.py
+   ```
+4. Build and test the dbt mart model:
+   ```sh
+   cd telegram_dbt
+   dbt run
+   dbt test
+   ```
+
+### Data Model
+- **fct_image_detections_mart**: Contains one row per detected object, with columns:
+  - `message_id` (foreign key to messages)
+  - `image_path`
+  - `detected_object_class`
+  - `confidence_score`
+
+---
+- **Task 3:** Data enrichment with YOLO ✅
 
 ## Testing & Validation
 - dbt built-in and custom tests for data quality
