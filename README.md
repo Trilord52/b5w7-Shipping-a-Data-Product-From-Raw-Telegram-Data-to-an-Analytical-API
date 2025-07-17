@@ -5,105 +5,180 @@
 - **Task 1:** Data scraping and collection ✅
 - **Task 2:** Data modeling and transformation (dbt) ✅
 - **Task 3:** Data enrichment with YOLO ✅
-- **Task 4:** Analytical API ⏳
+- **Task 4:** Analytical API ✅
 - **Task 5:** Pipeline orchestration ⏳
 
-## Overview
-This project builds an end-to-end data pipeline for extracting, transforming, enriching, and serving insights from Telegram data about Ethiopian medical businesses. It leverages dbt for transformation, Dagster for orchestration, YOLOv8 for image enrichment, and FastAPI for analytics. The pipeline is designed for reproducibility, scalability, and secure handling of secrets.
+## Project Overview
+This project delivers a robust, end-to-end data platform for extracting, transforming, enriching, and serving insights from public Telegram channels about Ethiopian medical businesses. The pipeline is designed for reproducibility, scalability, and security, leveraging:
+- **Telethon** for Telegram scraping
+- **YOLOv8** for image enrichment
+- **dbt** for data transformation and star schema modeling
+- **FastAPI** for analytical API endpoints
+- **Docker & Docker Compose** for environment management
+- **Dagster** (Task 5) for orchestration (see next steps)
+
+### Business Need & Goals
+- Answer key business questions:
+  - What are the most frequently mentioned medical products or drugs across all channels?
+  - How does the price or availability of a specific product vary across channels?
+  - Which channels have the most visual content (e.g., images of pills vs. creams)?
+  - What are the daily and weekly trends in posting volume for health-related topics?
+- Build a reproducible, secure, and scalable data product for analytics and reporting.
+
+## Table of Contents
+- [Project Structure](#project-structure)
+- [Setup & Reproducibility](#setup--reproducibility)
+- [Data Collection Mechanism](#data-collection-mechanism)
+- [Data Modeling & Transformation](#data-modeling--transformation)
+- [Machine Learning Integration (YOLO)](#machine-learning-integration-yolo)
+- [Analytical API (FastAPI)](#analytical-api-fastapi)
+- [Testing & Validation](#testing--validation)
+- [Security & Best Practices](#security--best-practices)
+- [Screenshots](#screenshots)
+- [Pipeline & Star Schema Diagrams](#pipeline--star-schema-diagrams)
+- [Reflection & Key Takeaways](#reflection--key-takeaways)
+- [Final Submission Checklist](#final-submission-checklist)
+- [References](#references)
+- [Contributing, Authors, License](#contributing-authors-license)
 
 ## Project Structure
 ```
 ├── data/                # Raw and processed data (gitignored)
 ├── notebooks/           # Jupyter/Colab notebooks for scraping, EDA, etc.
-├── src/                 # Source code for pipeline and loaders
+├── src/                 # Source code for pipeline, loaders, API
+├── telegram_dbt/        # dbt project (models, tests, docs)
 ├── requirements.txt     # Python dependencies
 ├── Dockerfile           # Containerization for reproducibility
 ├── docker-compose.yml   # Orchestrates app and PostgreSQL
-├── .env                 # Environment variables (not committed)
+├── .env.example         # Environment variable template
 ├── .gitignore           # Excludes secrets, venv, data, and instructions
+├── screenshots/         # API and pipeline screenshots for report
 ├── README.md            # Project documentation
 ```
 
-## Setup Instructions
+## Setup & Reproducibility
 1. **Clone the repository**
 2. **Create and activate a virtual environment**
 3. **Install dependencies**
-4. **Configure environment variables in `.env`**
-5. **Start PostgreSQL with Docker Compose**
-6. **Load raw data into PostgreSQL**
-7. **Initialize and configure dbt**
+   ```sh
+   pip install -r requirements.txt
+   ```
+4. **Configure environment variables**
+   - Copy `.env.example` to `.env` and fill in your secrets (never commit `.env`)
+5. **Start the stack with Docker Compose**
+   ```sh
+   docker-compose up --build
+   ```
+6. **Load raw data and run dbt models** (see below)
 
-## Data Scraping (Task 1)
-- Scraping is performed using Telethon in a Jupyter/Colab notebook.
-- Data is saved in `data/raw/telegram_messages/YYYY-MM-DD/channel_name/` as JSON and images.
-- Logging and error handling are implemented for traceability.
+## Data Collection Mechanism (Task 1)
+- **Telegram Scraper:**
+  - Uses Telethon with robust error handling, logging, and retry logic.
+  - Logs scraped channels and dates.
+  - Organizes raw JSON and images in a partitioned structure:
+    `data/raw/telegram_messages/YYYY-MM-DD/channel_name.json`
+  - Automated retry mechanisms for rate limits and errors.
+- **Logging:** All scraping actions and errors are logged for traceability.
 
 ## Data Modeling & Transformation (Task 2)
-- Raw data is loaded into the `raw_telegram_messages` table in the `TelegramShipping` database using `src/load_raw_to_postgres.py`.
-- dbt project is initialized and configured to connect to the database.
-- **Staging model:** Cleans and restructures raw data.
-- **Mart models:**
-  - `dim_channels`: Channel info
-  - `dim_dates`: Date dimension
-  - `fct_messages`: Fact table with foreign keys and metrics
-- **Testing:** dbt built-in and custom tests for data quality.
-- **Documentation:** dbt docs generated for all models.
+- **Loader Scripts:**
+  - `src/load_raw_to_postgres.py` loads raw JSON into `raw_telegram_messages` in Postgres.
+- **dbt Project:**
+  - **Staging models:** Clean and restructure raw data.
+  - **Mart models:** Star schema with `fct_messages`, `dim_channels`, `dim_dates`, etc.
+  - **Tests:** Built-in (unique, not_null) and custom SQL tests for business rules.
+  - **Docs:** dbt docs generated for all models.
 
-### Star Schema Diagram (placeholder)
+## Machine Learning Integration (YOLO) (Task 3)
+- **YOLOv8 Enrichment:**
+  - `src/yolo_enrichment.py` processes images, runs YOLOv8, and saves detections.
+  - `src/load_yolo_detections_to_postgres.py` loads detections into `fct_image_detections`.
+- **dbt Integration:**
+  - `fct_image_detections_mart` exposes enriched data for analytics.
+
+## Analytical API (FastAPI) (Task 4)
+- **Endpoints:**
+  - `GET /api/reports/top-channels?limit=10`: Most active channels
+  - `GET /api/channels/{channel_name}/activity`: Channel posting activity
+  - `GET /api/search/messages?query=keyword`: Search messages
+- **Pydantic Schemas:** All responses are validated and documented with field descriptions and examples.
+- **Error Handling:**
+  - 404 for missing channels, 422 for invalid queries, clear error messages.
+- **CORS:** Enabled for frontend integration.
+- **OpenAPI Docs:** Visit [http://localhost:8000/docs](http://localhost:8000/docs)
+
+### API Usage Examples
+#### curl
+```sh
+curl "http://localhost:8000/api/reports/top-channels?limit=5"
+curl "http://localhost:8000/api/channels/lobelia4cosmetics/activity"
+curl "http://localhost:8000/api/search/messages?query=paracetamol"
+```
+#### Python
+```python
+import requests
+resp = requests.get("http://localhost:8000/api/reports/top-channels?limit=5")
+print(resp.json())
+```
+
+## Testing & Validation
+- **Automated API tests:** `tests/test_api.py` (pytest + httpx)
+- **dbt tests:** Built-in and custom SQL tests
+- **Manual validation:** Swagger UI, curl, Postman
+
+## Security & Best Practices
+- **Secrets:** All secrets in `.env` (gitignored); `.env.example` provided
+- **Dockerized:** Full stack runs with Docker Compose
+- **Code Quality:** Modular, commented, and follows best practices
+- **Repository Organization:** Clear separation of scraping, dbt, API, and orchestration
+
+## Screenshots
+- The following screenshots demonstrate the working API endpoints and pipeline runs. See the `screenshots/` folder for full-resolution images:
+  - `screenshots/api_swagger_ui.png`: Swagger UI showing all endpoints
+  - `screenshots/api_top_channels.png`: Example response for /api/reports/top-channels
+  - `screenshots/api_channel_activity.png`: Example response for /api/channels/{channel_name}/activity
+  - `screenshots/api_search_messages.png`: Example response for /api/search/messages
+  - `screenshots/pipeline_diagram.png`: Visual diagram of the full data pipeline
+- Reviewers: Please open these images in the `screenshots/` folder for detailed views of the API and pipeline in action.
+
+## Pipeline & Star Schema Diagrams
+### Data Pipeline
+- See `screenshots/pipeline_diagram.png` for the full visual diagram.
+- For a quick reference, here is the pipeline in Mermaid format:
+```mermaid
+flowchart TD
+    A["Telegram Scraper (Telethon)"] --> B["Raw JSON & Images in Data Lake"]
+    B --> C["Loaders: load_raw_to_postgres.py, load_yolo_detections_to_postgres.py"]
+    C --> D["PostgreSQL: raw_telegram_messages, fct_image_detections"]
+    D --> E["dbt Transformations"]
+    E --> F["Star Schema: fct_messages, fct_image_detections_mart, dim_channels, dim_dates"]
+    F --> G["FastAPI Analytical API"]
+    G --> H["Business Users, Dashboards, or Apps"]
+```
+
+### Star Schema (Textual)
 ```
 FCT_MESSAGES
   |-- channel_id --> DIM_CHANNELS
   |-- date_id    --> DIM_DATES
+  |-- message_id <-- FCT_IMAGE_DETECTIONS_MART
 ```
 
-## Data Enrichment with YOLO (Task 3)
-- All images scraped in Task 1 are processed using a YOLOv8 model (ultralytics) to detect objects of interest.
-- The enrichment script (`src/yolo_enrichment.py`) scans for new images and runs YOLOv8 inference, saving detection results to `data/yolo_detections.csv`.
-- The loader script (`src/load_yolo_detections_to_postgres.py`) imports these detections into the `fct_image_detections` table in PostgreSQL, linking each detection to its source message.
-- A dbt source and mart model (`fct_image_detections_mart`) are defined to expose these detections for analytics, with tests and documentation.
-- This enables analysis of visual content (e.g., most common detected objects, confidence scores, image-level trends) alongside text data in the warehouse.
+## Reflection & Key Takeaways
+- **Technical Choices:** Modular, reproducible stack (FastAPI, dbt, Docker, YOLO, Dagster)
+- **Difficulties:** Schema alignment, dbt source/model debugging, end-to-end orchestration
+- **Key Takeaways:** Reproducibility, modularity, and clear documentation are essential. ML integration adds new analytics. Automated tests and error handling are critical for reliability.
 
-### How to Run YOLO Enrichment
-1. Ensure all images are present in the data directory (from Task 1 scraping).
-2. Run the enrichment script:
-   ```sh
-   python src/yolo_enrichment.py
-   ```
-3. Load the detection results into PostgreSQL:
-   ```sh
-   python src/load_yolo_detections_to_postgres.py
-   ```
-4. Build and test the dbt mart model:
-   ```sh
-   cd telegram_dbt
-   dbt run
-   dbt test
-   ```
 
-### Data Model
-- **fct_image_detections_mart**: Contains one row per detected object, with columns:
-  - `message_id` (foreign key to messages)
-  - `image_path`
-  - `detected_object_class`
-  - `confidence_score`
+## References
+- [FastAPI](https://fastapi.tiangolo.com/)
+- [dbt](https://docs.getdbt.com/)
+- [Ultralytics YOLOv8](https://docs.ultralytics.com/)
+- [Dagster](https://dagster.io/)
+- [Telethon](https://docs.telethon.dev/en/stable/)
+- [Kimball Dimensional Modeling](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/)
 
----
-- **Task 3:** Data enrichment with YOLO ✅
-
-## Testing & Validation
-- dbt built-in and custom tests for data quality
-- Logging for all pipeline steps
-
-## Documentation & Support
-- Inline comments in code and notebooks
-- This README for setup, usage, and troubleshooting
-- For questions, open an issue or contact the author
-
-## Contributing
-Contributions are welcome! Please fork the repo and submit a pull request.
-
-## Authors
-- Tinbite Yonas
-
-## License
-- [Specify license here] 
+## Contributing, Authors, License
+- **Contributions:** Welcome! Please fork the repo and submit a pull request.
+- **Authors:** Tinbite Yonas
+- **License:** [Specify license here] 

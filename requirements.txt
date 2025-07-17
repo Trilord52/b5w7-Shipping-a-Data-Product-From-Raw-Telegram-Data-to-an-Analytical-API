@@ -21,6 +21,9 @@ ultralytics        # YOLOv8 for object detection
 
 # Utilities
 tqdm
+requests           # For API usage examples and scripts
+jupyter            # For running notebooks (EDA, scraping)
 
 # Testing
 pytest 
+httpx            # For async HTTP requests in tests 
