@@ -132,6 +132,49 @@ print(resp.json())
 - **Code Quality:** Modular, commented, and follows best practices
 - **Repository Organization:** Clear separation of scraping, dbt, API, and orchestration
 
+## Engineering Decisions & Justifications
+- **Docker & Docker Compose:** Chosen for reproducibility, scalability, and consistent environments across development and production. This ensures anyone can run the project with a single command, regardless of OS or local setup.
+- **Data Lake Partitioning:** Raw data is stored in a partitioned directory structure (`data/raw/telegram_messages/YYYY-MM-DD/channel_name.json`) for easy incremental processing, traceability, and efficient downstream loading.
+- **Star Schema Design:** dbt models implement a star schema for analytical performance, reliability, and ease of querying. This structure supports business questions and scales well for reporting.
+- **.env & Security:** All secrets and environment variables are managed in `.env`, which is excluded from version control. `.env.example` provides a template for safe configuration.
+
+## Task-by-Task File Mapping
+- **Task 0 (Setup):**
+  - `requirements.txt`, `Dockerfile`, `docker-compose.yml`, `.env.example`, `.gitignore`
+- **Task 1 (Scraping):**
+  - `src/scraping.py` (or `scraping.ipynb`), `data/raw/telegram_messages/`
+- **Task 2 (Transformation):**
+  - `src/load_raw_to_postgres.py`, `telegram_dbt/` (dbt project, models, tests)
+- **Task 3 (Enrichment):**
+  - `src/yolo_enrichment.py`, `src/load_yolo_detections_to_postgres.py`, `telegram_dbt/models/example/fct_image_detections_mart.sql`
+- **Task 4 (API):**
+  - `src/api.py`, `src/crud.py`, `src/schemas.py`, `src/database.py`
+- **Task 5 (Orchestration):**
+  - `orchestration/pipeline.py`, `orchestration/repository.py`, `orchestration/pyproject.toml`
+
+## Logging & Error Handling
+- **Scraping:**
+  - All scraping actions, errors, and outcomes are logged in real time. Automated retry logic ensures resilience to network/API errors and rate limits.
+- **Pipeline:**
+  - Each Dagster op checks subprocess return codes and raises clear exceptions. Logs are available in the Dagster UI for every run and step.
+- **API:**
+  - FastAPI endpoints return clear error messages (404, 422) for missing data or invalid queries.
+
+## dbt Custom Tests & Documentation
+- **Built-in Tests:** All primary keys and critical columns are validated with `unique` and `not_null` tests.
+- **Custom Tests:** At least one custom SQL test is included to enforce a key business rule (see `telegram_dbt/tests/`).
+- **Documentation:** dbt docs are generated for all models, and schema.yml files include detailed descriptions.
+
+## Security & Environment Management
+- **.env:** All secrets (DB credentials, API keys) are stored in `.env`, which is gitignored.
+- **.env.example:** Provides a safe template for configuration.
+- **No secrets are ever committed.**
+
+## Pipeline Extensibility
+- **Modular Design:** Each pipeline stage is a separate script/module and Dagster op.
+- **Easy to Extend:** Add new ops (e.g., data validation, notifications), sensors, or schedules in `orchestration/pipeline.py`.
+- **Configurable:** Use Dagster config to parameterize ops for different environments or data sources.
+
 ## Screenshots
 - The following screenshots demonstrate the working API endpoints and pipeline runs. See the `screenshots/` folder for full-resolution images:
   - `screenshots/api_swagger_ui.png`: Swagger UI showing all endpoints
@@ -163,6 +206,27 @@ FCT_MESSAGES
   |-- date_id    --> DIM_DATES
   |-- message_id <-- FCT_IMAGE_DETECTIONS_MART
 ```
+
+## Pipeline Orchestration (Task 5)
+- The full pipeline is orchestrated using Dagster in the `orchestration/` folder.
+- **How to run the Dagster UI:**
+  ```sh
+  dagster dev orchestration/
+  ```
+  - This launches the Dagster web UI at http://localhost:3000 where you can monitor, trigger, and schedule pipeline runs.
+- **Pipeline steps:**
+  - Scrape Telegram data
+  - Load raw data to Postgres
+  - Run dbt transformations
+  - Run YOLO enrichment and load detections
+- **Scheduling:** The pipeline is scheduled to run daily at 2 AM.
+- **Event-driven orchestration:**
+  - A Dagster sensor automatically triggers the pipeline when new files are detected in `data/raw/telegram_messages`.
+  - This enables near-real-time processing when new data arrives.
+- **Best practices:**
+  - All orchestration logic is separated from business logic for maintainability.
+  - You can extend the pipeline by adding more ops, sensors, or schedules as needed.
+- **Monitoring:** Use the Dagster UI to view logs, run history, and trigger manual runs.
 
 ## Reflection & Key Takeaways
 - **Technical Choices:** Modular, reproducible stack (FastAPI, dbt, Docker, YOLO, Dagster)
