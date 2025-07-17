@@ -12,9 +12,9 @@ load_dotenv()
 
 DB_HOST = os.getenv('POSTGRES_HOST', 'localhost')
 DB_PORT = os.getenv('POSTGRES_PORT', '5432')
-DB_NAME = os.getenv('POSTGRES_DB', 'telegram')
-DB_USER = os.getenv('POSTGRES_USER', 'postgres')
-DB_PASS = os.getenv('POSTGRES_PASSWORD', 'postgres')
+DB_NAME = os.getenv('POSTGRES_DB', 'TelegramShipping')
+DB_USER = os.getenv('POSTGRES_USER', 'Tinbite')
+DB_PASS = os.getenv('POSTGRES_PASSWORD', 'tinbite52')
 
 RAW_DATA_PATH = 'data/raw/telegram_messages'
 
@@ -91,21 +91,23 @@ def main():
     if not all_messages:
         logging.warning('No messages to load. Exiting.')
         return
-    # Connect to PostgreSQL
-    conn = psycopg2.connect(
-        host=DB_HOST,
-        port=DB_PORT,
-        dbname=DB_NAME,
-        user=DB_USER,
-        password=DB_PASS
-    )
-    cur = conn.cursor()
-    create_table_if_not_exists(cur)
-    upsert_messages(cur, all_messages)
-    conn.commit()
-    cur.close()
-    conn.close()
-    logging.info('All messages loaded into raw_telegram_messages table.')
+    try:
+        conn = psycopg2.connect(
+            host=DB_HOST,
+            port=DB_PORT,
+            dbname=DB_NAME,
+            user=DB_USER,
+            password=DB_PASS
+        )
+        cur = conn.cursor()
+        create_table_if_not_exists(cur)
+        upsert_messages(cur, all_messages)
+        conn.commit()
+        cur.close()
+        conn.close()
+        logging.info('All messages loaded into raw_telegram_messages table.')
+    except Exception as e:
+        logging.error(f'Failed to load messages into PostgreSQL: {e}')
 
 if __name__ == '__main__':
-    main() 
+    main()
