@@ -1,6 +1,15 @@
 
 version: 2
 
+sources:
+  - name: public
+    description: "Raw tables loaded directly into the public schema"
+    schema: public
+    tables:
+      - name: fct_image_detections
+        description: "Fact table containing YOLOv8 object detection results loaded from enrichment."
+
+
 models:
   - name: my_first_dbt_model
     description: "A starter dbt model"
@@ -18,4 +27,24 @@ models:
         description: "The primary key for this table"
         data_tests:
           - unique
+          - not_null
+
+  - name: fct_image_detections_mart
+    description: "Fact table containing YOLOv8 object detection results for images shared in Telegram messages. Each row represents a detected object in an image."
+    columns:
+      - name: message_id
+        description: "Foreign key referencing the message containing the image."
+        tests:
+          - not_null
+      - name: image_path
+        description: "Path to the image file."
+        tests:
+          - not_null
+      - name: detected_object_class
+        description: "The class label detected by YOLOv8."
+        tests:
+          - not_null
+      - name: confidence_score
+        description: "Confidence score of the detection."
+        tests:
           - not_null
