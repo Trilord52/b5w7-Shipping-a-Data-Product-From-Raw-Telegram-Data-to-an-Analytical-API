@@ -3,7 +3,7 @@ telethon           # Telegram scraping
 sqlalchemy         # Database interaction
 python-dotenv      # Environment variable management
 pydantic           # Data validation (used by FastAPI)
-psycopg2           # PostgreSQL connectivity for loader script
+psycopg2-binary    # PostgreSQL connectivity for loader script
 
 # Data Transformation
 dbt-postgres       # Data transformation and modeling

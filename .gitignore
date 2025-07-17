@@ -1,3 +1,13 @@
-instructions/
-.venv
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Data and secrets
 data/
+.env
+
+# Project-specific
+instructions/
+logs/
